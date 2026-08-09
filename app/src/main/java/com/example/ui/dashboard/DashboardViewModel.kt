@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
 import com.example.data.local.entity.Settings
 import com.example.data.repository.AppRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +27,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val todayFailedCount: StateFlow<Int>
     val pendingSyncCount: StateFlow<Int>
     val recentTransactions: StateFlow<List<com.example.data.local.entity.Transaction>>
+    
+    private val _topCustomersClosestToGift = MutableStateFlow(emptyList<CustomerLoyaltyStatus>())
+    val topCustomersClosestToGift: StateFlow<List<CustomerLoyaltyStatus>> = _topCustomersClosestToGift
 
     init {
         val dao = AppDatabase.getDatabase(application).appDao()
@@ -127,6 +131,32 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 duplicateProtection = true
             )
             repository.updateSettings(currentSettings.copy(autoSend = enabled))
+        }
+    }
+    
+    fun loadTopCustomersClosestToGift() {
+        viewModelScope.launch {
+            val settings = repository.getSettingsSync() ?: Settings()
+            val threshold = settings.giftThreshold.takeIf { it > 0 } ?: 10
+            
+            val allCounts = repository.getAllCustomerPurchaseCounts()
+            
+            val statuses = allCounts.map { customer ->
+                val progress = customer.count % threshold
+                val remaining = if (progress == 0 && customer.count > 0) threshold else (threshold - progress)
+                
+                CustomerLoyaltyStatus(
+                    phone = customer.phone,
+                    successfulPurchases = customer.count,
+                    giftEnabled = settings.giftEnabled,
+                    giftThreshold = threshold,
+                    remainingToNextGift = remaining,
+                    favoriteCategory = null, // don't load favorite category for all users to save time
+                    progress = progress
+                )
+            }.sortedBy { it.remainingToNextGift }.take(10)
+            
+            _topCustomersClosestToGift.value = statuses
         }
     }
 }

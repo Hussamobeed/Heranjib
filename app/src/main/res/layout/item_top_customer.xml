@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tv_top_phone"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="77xxxxxxx"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_top_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="متبقي 2"
+        android:textSize="12sp"
+        android:textColor="?attr/colorPrimary"
+        android:layout_marginEnd="12dp" />
+
+    <ImageButton
+        android:id="@+id/btn_copy_phone"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_copy"
+        android:contentDescription="نسخ"
+        android:tint="?attr/colorOnSurfaceVariant" />
+        
+    <ImageButton
+        android:id="@+id/btn_search_phone"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_search"
+        android:contentDescription="بحث"
+        android:tint="?attr/colorPrimary" />
+
+</LinearLayout>

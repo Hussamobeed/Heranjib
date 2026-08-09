@@ -39,6 +39,15 @@ class DashboardFragment : Fragment() {
 
         val adapter = TransactionsAdapter()
         binding.rvRecentTransactions.adapter = adapter
+        
+        val topCustomersAdapter = TopCustomersAdapter { phone ->
+            binding.etLoyaltyPhone.setText(phone)
+            binding.btnCheckLoyalty.performClick()
+        }
+        binding.rvTopCustomers.adapter = topCustomersAdapter
+        
+        // Load top customers on start
+        viewModel.loadTopCustomersClosestToGift()
 
         binding.btnDisableBatteryOpt.setOnClickListener {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -88,6 +97,14 @@ class DashboardFragment : Fragment() {
                 launch {
                     viewModel.recentTransactions.collect { transactions ->
                         adapter.submitList(transactions)
+                        // Refresh top customers whenever transactions update
+                        viewModel.loadTopCustomersClosestToGift()
+                    }
+                }
+                
+                launch {
+                    viewModel.topCustomersClosestToGift.collect { topCustomers ->
+                        topCustomersAdapter.submitList(topCustomers)
                     }
                 }
                 

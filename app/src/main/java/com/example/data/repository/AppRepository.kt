@@ -55,4 +55,6 @@ class AppRepository(
 
     suspend fun getSuccessfulPurchasesCount(phone: String): Int = appDao.getSuccessfulPurchasesCount(phone)
     suspend fun getCategoriesBoughtByUser(phone: String): List<String> = appDao.getCategoriesBoughtByUser(phone)
+    
+    suspend fun getAllCustomerPurchaseCounts(): List<com.example.data.local.model.CustomerPurchaseCount> = appDao.getAllCustomerPurchaseCounts()
 }

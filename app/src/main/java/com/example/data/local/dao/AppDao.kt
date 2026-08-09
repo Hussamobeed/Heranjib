@@ -245,4 +245,6 @@ interface AppDao {
 
     @Query("SELECT categoryName FROM transactions WHERE customerPhone = :phone AND smsStatus = 'SENT' AND amount > 0 GROUP BY categoryName ORDER BY COUNT(*) DESC")
     suspend fun getCategoriesBoughtByUser(phone: String): List<String>
+    @Query("SELECT customerPhone as phone, COUNT(*) as count FROM transactions WHERE customerPhone IS NOT NULL AND customerPhone != '' AND smsStatus = 'SENT' AND amount > 0 GROUP BY customerPhone HAVING COUNT(*) > 0")
+    suspend fun getAllCustomerPurchaseCounts(): List<com.example.data.local.model.CustomerPurchaseCount>
 }
