@@ -34,6 +34,16 @@ jobs:
           mkdir -p app/keystore
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/heranjib.keystore
 
+      - name: Auto-increment Version Code
+        run: |
+          # يقرأ الرقم الحالي
+          CURRENT_CODE=$(grep -oP 'versionCode\s+\K\d+' app/build.gradle)
+          # يزيده بواحد
+          NEW_CODE=$((CURRENT_CODE + 1))
+          # يستبدله في الملف
+          sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" app/build.gradle
+          echo "Version code updated: $CURRENT_CODE → $NEW_CODE"
+
       - name: Build Signed Release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
