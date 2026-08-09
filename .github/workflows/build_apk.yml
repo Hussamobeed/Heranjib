@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Signed APK
+    name: Build APK
     runs-on: ubuntu-latest
 
     steps:
@@ -29,59 +29,25 @@ jobs:
             chmod +x gradlew
           fi
 
-      - name: Decode Keystore from Secret
+      - name: Prepare Debug Keystore
         run: |
-          mkdir -p app/keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/heranjib.keystore
-
-      - name: Auto-increment Version Code
-        run: |
-          # نحدد ملف البناء (Groovy أو Kotlin DSL)
-          if [ -f app/build.gradle.kts ]; then
-            BUILD_FILE="app/build.gradle.kts"
-          elif [ -f app/build.gradle ]; then
-            BUILD_FILE="app/build.gradle"
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
           else
-            echo "Build file not found!"
-            exit 1
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
-          
-          # نقرأ الرقم الحالي (يعمل مع: versionCode 2  أو  versionCode = 2)
-          CURRENT_CODE=$(grep -oP 'versionCode\s*[= ]?\s*\K\d+' "$BUILD_FILE")
-          
-          # نزيده بواحد
-          NEW_CODE=$((CURRENT_CODE + 1))
-          
-          # نستبدل الرقم في الملف (يعمل مع الصيغتين)
-          sed -i -E "s/(versionCode\s*[= ]?\s*)[0-9]+/\1$NEW_CODE/" "$BUILD_FILE"
-          
-          echo "✅ Version code updated: $CURRENT_CODE → $NEW_CODE"
 
-      - name: Build Signed Release APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: Build Debug APK
         run: |
           if [ -f gradlew ]; then
-            ./gradlew assembleRelease \
-              -Pandroid.injected.signing.store.file="$PWD/app/keystore/heranjib.keystore" \
-              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-              -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-              --stacktrace
+            ./gradlew assembleDebug --stacktrace
           else
-            gradle assembleRelease \
-              -Pandroid.injected.signing.store.file="$PWD/app/keystore/heranjib.keystore" \
-              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-              -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-              --stacktrace
+            gradle assembleDebug --stacktrace
           fi
 
-      - name: Upload Signed APK Artifact
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
