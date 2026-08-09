@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MyApplication" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorOnPrimary">@color/m3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_primary_container</item>
+        <item name="android:colorBackground">@color/m3_surface</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorOnSurface">@color/m3_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface_variant</item>
+        <item name="colorOutline">@color/m3_outline</item>
+        
+        <!-- Navigation Bar & Status Bar colors -->
+        <item name="android:statusBarColor">@color/m3_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/m3_surface</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+        
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
+        <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
+
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.App.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.App.DisplayMedium</item>
+        <item name="android:textViewStyle">@style/Widget.App.TextView</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.App.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.App.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.App.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.App.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.App.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.App.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.App.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.App.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.App.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.App.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.App.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.App.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.App.LabelSmall</item>
+    </style>
+
+    <style name="Widget.App.Button" parent="Widget.Material3.Button">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+
+    <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Elevated">
+    </style>
+
+    <style name="TextAppearance.App.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="Widget.App.TextView" parent="android:Widget.TextView">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.BottomNav" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+    
+    <style name="TextAppearance.App.Toolbar" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/cairo_family</item>
+        <item name="fontFamily">@font/cairo_family</item>
+    </style>
+</resources>

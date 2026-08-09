@@ -1,0 +1,134 @@
+package com.example.ui.dashboard
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.data.local.AppDatabase
+import com.example.data.local.entity.Settings
+import com.example.data.repository.AppRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+class DashboardViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository: AppRepository
+    private val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+
+    val settings: StateFlow<Settings?>
+    
+    val availableVouchersCount: StateFlow<Int>
+    val todaySalesCount: StateFlow<Int>
+    val todayRevenue: StateFlow<Double>
+    val totalSentVouchers: StateFlow<Int>
+    val todayFailedCount: StateFlow<Int>
+    val pendingSyncCount: StateFlow<Int>
+    val recentTransactions: StateFlow<List<com.example.data.local.entity.Transaction>>
+
+    init {
+        val dao = AppDatabase.getDatabase(application).appDao()
+        repository = AppRepository(dao)
+
+        viewModelScope.launch {
+            if (repository.getSettingsSync() == null) {
+                repository.updateSettings(Settings())
+            }
+        }
+
+        settings = repository.getSettings().stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
+        
+        availableVouchersCount = repository.getAvailableVouchersCount().stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            0
+        )
+        
+        todaySalesCount = repository.getTodaySalesCount(todayDate)
+            .map { it ?: 0 }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                0
+            )
+            
+        todayRevenue = repository.getTodayRevenue(todayDate)
+            .map { it ?: 0.0 }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                0.0
+            )
+            
+        totalSentVouchers = repository.getTotalSentVouchers()
+            .map { it ?: 0 }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                0
+            )
+            
+        todayFailedCount = repository.getTodayFailedSalesCountFromStats(todayDate)
+            .map { it ?: 0 }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                0
+            )
+
+        pendingSyncCount = dao.getUnsyncedTransactionsCount()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                0
+            )
+            
+        recentTransactions = repository.getRecentTransactions(3)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
+    }
+
+    suspend fun checkCustomerLoyalty(phone: String): CustomerLoyaltyStatus {
+        val count = repository.getSuccessfulPurchasesCount(phone)
+        val categories = repository.getCategoriesBoughtByUser(phone)
+        val favoriteCategory = categories.firstOrNull()
+        
+        val progress = count % 10
+        val remaining = 10 - progress
+        
+        return CustomerLoyaltyStatus(
+            phone = phone,
+            successfulPurchases = count,
+            remainingToNextGift = remaining,
+            favoriteCategory = favoriteCategory,
+            progress = progress
+        )
+    }
+
+    fun setAutoSendEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val currentSettings = repository.getSettingsSync() ?: Settings(
+                autoSend = false,
+                smsTemplate = "",
+                duplicateProtection = true
+            )
+            repository.updateSettings(currentSettings.copy(autoSend = enabled))
+        }
+    }
+}
+
+data class CustomerLoyaltyStatus(
+    val phone: String,
+    val successfulPurchases: Int,
+    val remainingToNextGift: Int,
+    val favoriteCategory: String?,
+    val progress: Int
+)

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:title="اختبار تحليل الرسائل"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/et_sms_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="أدخل نص الرسالة هنا"
+        android:minLines="3"
+        android:gravity="top|start" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_parse"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="تحليل الرسالة (Parse SMS)" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/btn_test1"
+        android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="T1"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_test2"
+        android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="T2"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_test3"
+        android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="T3"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_test4"
+        android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="T4"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="النتيجة:"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="16sp"
+        android:background="#F3F4F6"
+        android:padding="8dp" />
+
+</LinearLayout>

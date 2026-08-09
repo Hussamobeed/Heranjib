@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.ui.dashboard.DashboardFragment"
+        android:label="لوحة القيادة"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/categoriesFragment"
+        android:name="com.example.ui.categories.CategoriesFragment"
+        android:label="فئات القسائم"
+        tools:layout="@layout/fragment_categories">
+        <action
+            android:id="@+id/action_nav_categories_to_voucherListFragment"
+            app:destination="@id/voucherListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/voucherListFragment"
+        android:name="com.example.ui.vouchers.VoucherListFragment"
+        android:label="قائمة القسائم"
+        tools:layout="@layout/fragment_voucher_list" />
+
+    <fragment
+        android:id="@+id/transactionsFragment"
+        android:name="com.example.ui.transactions.TransactionsFragment"
+        android:label="المعاملات"
+        tools:layout="@layout/fragment_transactions" />
+
+    <fragment
+        android:id="@+id/reportsFragment"
+        android:name="com.example.ui.reports.ReportsFragment"
+        android:label="التقارير"
+        tools:layout="@layout/fragment_reports" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.ui.settings.SettingsFragment"
+        android:label="الإعدادات"
+        tools:layout="@layout/fragment_settings" />
+</navigation>
