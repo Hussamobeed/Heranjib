@@ -36,13 +36,26 @@ jobs:
 
       - name: Auto-increment Version Code
         run: |
-          # يقرأ الرقم الحالي
-          CURRENT_CODE=$(grep -oP 'versionCode\s+\K\d+' app/build.gradle)
-          # يزيده بواحد
+          # نحدد ملف البناء (Groovy أو Kotlin DSL)
+          if [ -f app/build.gradle.kts ]; then
+            BUILD_FILE="app/build.gradle.kts"
+          elif [ -f app/build.gradle ]; then
+            BUILD_FILE="app/build.gradle"
+          else
+            echo "Build file not found!"
+            exit 1
+          fi
+          
+          # نقرأ الرقم الحالي (يعمل مع: versionCode 2  أو  versionCode = 2)
+          CURRENT_CODE=$(grep -oP 'versionCode\s*[= ]?\s*\K\d+' "$BUILD_FILE")
+          
+          # نزيده بواحد
           NEW_CODE=$((CURRENT_CODE + 1))
-          # يستبدله في الملف
-          sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" app/build.gradle
-          echo "Version code updated: $CURRENT_CODE → $NEW_CODE"
+          
+          # نستبدل الرقم في الملف (يعمل مع الصيغتين)
+          sed -i -E "s/(versionCode\s*[= ]?\s*)[0-9]+/\1$NEW_CODE/" "$BUILD_FILE"
+          
+          echo "✅ Version code updated: $CURRENT_CODE → $NEW_CODE"
 
       - name: Build Signed Release APK
         env:
