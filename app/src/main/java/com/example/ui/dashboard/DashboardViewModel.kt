@@ -97,16 +97,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     suspend fun checkCustomerLoyalty(phone: String): CustomerLoyaltyStatus {
+        val settings = repository.getSettingsSync() ?: Settings()
+        val enabled = settings.giftEnabled
+        val threshold = settings.giftThreshold.takeIf { it > 0 } ?: 10
+
         val count = repository.getSuccessfulPurchasesCount(phone)
         val categories = repository.getCategoriesBoughtByUser(phone)
         val favoriteCategory = categories.firstOrNull()
         
-        val progress = count % 10
-        val remaining = 10 - progress
+        val progress = count % threshold
+        val remaining = if (progress == 0 && count > 0) threshold else (threshold - progress)
         
         return CustomerLoyaltyStatus(
             phone = phone,
             successfulPurchases = count,
+            giftEnabled = enabled,
+            giftThreshold = threshold,
             remainingToNextGift = remaining,
             favoriteCategory = favoriteCategory,
             progress = progress
@@ -128,6 +134,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 data class CustomerLoyaltyStatus(
     val phone: String,
     val successfulPurchases: Int,
+    val giftEnabled: Boolean,
+    val giftThreshold: Int,
     val remainingToNextGift: Int,
     val favoriteCategory: String?,
     val progress: Int

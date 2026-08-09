@@ -346,7 +346,7 @@ class TransactionManager(
                 smsStatus = "GIFT_SENT",
                 transactionDate = sentDate,
                 transactionTime = sentTime,
-                originalSms = "LOYALTY_GIFT_10_PURCHASES"
+                originalSms = "LOYALTY_GIFT_${settings.giftThreshold}_PURCHASES"
             )
             
             database.withTransaction {

@@ -47,11 +47,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun updateSettings(settings: Settings) {
         viewModelScope.launch {
-            if (settings.id == 0) {
-                dao.insertSettings(settings)
-            } else {
-                dao.updateSettings(settings)
-            }
+            val existing = dao.getSettingsSync()
+            val targetId = if (existing != null && existing.id > 0) existing.id else 1
+            dao.insertSettings(settings.copy(id = targetId))
         }
     }
 

@@ -61,12 +61,19 @@ class DashboardFragment : Fragment() {
                     binding.tvLoyaltyPhoneDisplay.text = "العميل: ${status.phone}"
                     binding.tvLoyaltyPurchaseCount.text = "إجمالي المشتريات الناجحة: ${status.successfulPurchases}"
                     
-                    if (status.successfulPurchases == 0) {
-                        binding.tvLoyaltyRemaining.text = "متبقي للحصول على الهدية التالية: 10 عمليات"
+                    if (!status.giftEnabled) {
+                        binding.tvLoyaltyRemaining.text = "نظام الهدايا معطل حالياً من الإعدادات"
+                        binding.pbLoyaltyProgress.max = status.giftThreshold
+                        binding.pbLoyaltyProgress.progress = 0
+                        binding.tvLoyaltyFavorite.text = "الفئة الأكثر شراءً: ${status.favoriteCategory ?: "لا توجد فئات محددة"}"
+                    } else if (status.successfulPurchases == 0) {
+                        binding.tvLoyaltyRemaining.text = "متبقي للحصول على الهدية التالية: ${status.giftThreshold} عمليات"
+                        binding.pbLoyaltyProgress.max = status.giftThreshold
                         binding.pbLoyaltyProgress.progress = 0
                         binding.tvLoyaltyFavorite.text = "الفئة الأكثر شراءً: لا توجد مشتريات سابقة"
                     } else {
                         binding.tvLoyaltyRemaining.text = "متبقي للحصول على الهدية التالية: ${status.remainingToNextGift} عمليات"
+                        binding.pbLoyaltyProgress.max = status.giftThreshold
                         binding.pbLoyaltyProgress.progress = status.progress
                         binding.tvLoyaltyFavorite.text = "الفئة الأكثر شراءً: ${status.favoriteCategory ?: "لا توجد فئات محددة"}"
                     }
