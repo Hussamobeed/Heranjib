@@ -97,10 +97,10 @@ class CsvExportManager(private val context: Context, private val database: AppDa
 
             // 5. Export Settings
             val settingsFile = File(cacheDir, "Settings.csv")
-            settingsFile.writeText("id,autoSend,smsTemplate,duplicateProtection,autoSync,webAppUrl,syncWifiOnly,lastSyncTime\n")
+            settingsFile.writeText("id,autoSend,smsTemplate,duplicateProtection,autoSync,webAppUrl,syncWifiOnly,lastSyncTime,giftEnabled,giftThreshold,giftCategoryPreference\n")
             val settings = dao.getSettingsSync()
             if (settings != null) {
-                settingsFile.appendText("${settings.id},${settings.autoSend},${escapeCsvField(settings.smsTemplate)},${settings.duplicateProtection},${settings.autoSync},${escapeCsvField(settings.webAppUrl)},${settings.syncWifiOnly},${escapeCsvField(settings.lastSyncTime)}\n")
+                settingsFile.appendText("${settings.id},${settings.autoSend},${escapeCsvField(settings.smsTemplate)},${settings.duplicateProtection},${settings.autoSync},${escapeCsvField(settings.webAppUrl)},${settings.syncWifiOnly},${escapeCsvField(settings.lastSyncTime)},${settings.giftEnabled},${settings.giftThreshold},${escapeCsvField(settings.giftCategoryPreference)}\n")
             }
 
             // 6. Export Application Logs
@@ -255,7 +255,10 @@ class CsvExportManager(private val context: Context, private val database: AppDa
                                 autoSync = parts[4].toBoolean(),
                                 webAppUrl = parts[5].takeIf { it.isNotEmpty() },
                                 syncWifiOnly = parts[6].toBoolean(),
-                                lastSyncTime = parts[7].takeIf { it.isNotEmpty() }
+                                lastSyncTime = parts[7].takeIf { it.isNotEmpty() },
+                                giftEnabled = if (parts.size > 8) parts[8].toBoolean() else true,
+                                giftThreshold = if (parts.size > 9) parts[9].toIntOrNull() ?: 10 else 10,
+                                giftCategoryPreference = if (parts.size > 10) parts[10] else "MOST_BOUGHT"
                             )
                             dao.insertSettings(settings)
                         }

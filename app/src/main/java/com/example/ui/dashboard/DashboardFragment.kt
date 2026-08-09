@@ -49,6 +49,13 @@ class DashboardFragment : Fragment() {
         // Load top customers on start
         viewModel.loadTopCustomersClosestToGift()
 
+        binding.llStatus.setOnClickListener {
+            val currentState = viewModel.settings.value?.autoSend ?: true
+            viewModel.setAutoSendEnabled(!currentState)
+            val msg = if (!currentState) "تم تفعيل الخدمة" else "تم إيقاف الخدمة"
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        }
+
         binding.btnDisableBatteryOpt.setOnClickListener {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                 data = Uri.parse("package:${requireContext().packageName}")
@@ -120,6 +127,7 @@ class DashboardFragment : Fragment() {
                         } else {
                             binding.tvStatusText.text = "الخدمة متوقفة"
                             binding.viewStatusIndicator.setBackgroundResource(R.drawable.circle_red)
+                            SmsMonitoringService.stopService(requireContext())
                         }
                         
                         binding.tvLastSync.text = settings?.lastSyncTime ?: "لم يتم المزامنة"
