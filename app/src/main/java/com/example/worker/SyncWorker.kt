@@ -85,7 +85,7 @@ class SyncWorker(private val context: Context, params: WorkerParameters): Corout
                         val date=LocalDate.parse(asciiDigits(tx.transactionDate),DateTimeFormatter.ISO_LOCAL_DATE)
                         val time=LocalTime.parse(asciiDigits(tx.transactionTime))
                         payload.put(JSONObject().put("id",id("transaction",tx.id)).put("voucherId",voucher?.remoteId?:"").put("username",tx.voucherNumber)
-                            .put("category",tx.categoryName).put("phone",tx.customerPhone).put("amount",tx.amount).put("status",tx.smsStatus)
+                            .put("originalSms",tx.originalSms.take(4000)).put("category",tx.categoryName).put("phone",tx.customerPhone).put("amount",tx.amount).put("status",tx.smsStatus)
                             .put("saleDate",date.toString()).put("soldAt",date.atTime(time).atZone(ZoneId.of("Asia/Aden")).toInstant().toString()))
                     }
                     check(link.request("sync",empty().put("transactions",payload)).optBoolean("accepted")) { "لم يؤكد الخادم المعاملات" }
