@@ -34,9 +34,12 @@ class SyncWorker(private val context: Context, params: WorkerParameters): Corout
             val db=AppDatabase.getDatabase(context); val dao=db.appDao()
             fun id(kind:String,value:Long)=UUID.nameUUIDFromBytes("${link.installationId}:$kind:$value".toByteArray(Charsets.UTF_8)).toString()
             fun empty()=JSONObject().put("vouchers",JSONArray()).put("transactions",JSONArray()).put("logs",JSONArray()).put("appVersion",BuildConfig.VERSION_NAME)
+            var logsEnabled=false
             try {
+                check(link.request("sync",empty()).optBoolean("accepted"))
                 // Server requests remain pending until every credential is committed locally.
                 val poll=link.request("poll",JSONObject())
+                logsEnabled=poll.optBoolean("logsEnabled")
                 val commands=poll.getJSONArray("commands")
                 for(i in 0 until commands.length()) {
                     val command=commands.getJSONObject(i);val users=command.getJSONArray("users")
@@ -99,11 +102,15 @@ class SyncWorker(private val context: Context, params: WorkerParameters): Corout
                         logs.forEach{dao.ackSabaLog(it.id)}
                     }
                 }
-                check(link.request("sync",empty()).optBoolean("accepted"))
+                check(link.request("sync",empty().put("inventoryReady",true)).optBoolean("accepted"))
                 dao.getSettingsSync()?.let{dao.updateSettings(it.copy(lastSyncTime=Instant.now().toString()))}
                 Result.success()
             } catch(e:Exception) {
                 dao.insertLog(AppLog(type="ERROR",message="مزامنة SABA: ${e.message}".take(2000)))
+                if(logsEnabled)try {
+                    val diagnostic=JSONObject().put("id",UUID.randomUUID().toString()).put("level","ERROR").put("message","مزامنة SABA: ${e.message}".take(2000)).put("loggedAt",Instant.now().toString())
+                    link.request("sync",empty().put("logs",JSONArray().put(diagnostic)))
+                } catch(_:Exception) {}
                 Result.retry()
             }
         }

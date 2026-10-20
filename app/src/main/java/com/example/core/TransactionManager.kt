@@ -53,8 +53,8 @@ class TransactionManager(
                 
                 // Helper to record failed transaction
                 suspend fun recordFailedTransaction(errorReason: String, voucherNum: String = "N/A", catName: String = amountStr, catId: Long? = null) {
-                    val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-                    val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
+                    val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                    val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
                     
                     database.withTransaction {
                         dao.insertTransaction(
@@ -116,8 +116,8 @@ class TransactionManager(
                 val isSent = smsSender.sendSms(parsedResult.phoneNumber!!, smsText)
 
                 if (isSent) {
-                    val sentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-                    val sentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
+                    val sentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                    val sentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
                     
                     val transaction = Transaction(
                         customerPhone = parsedResult.phoneNumber!!,
@@ -357,8 +357,8 @@ class TransactionManager(
         val isSent = smsSender.sendSms(phone, giftSmsText)
         
         if (isSent) {
-            val sentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-            val sentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
+            val sentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+            val sentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
             
             val giftTransaction = Transaction(
                 customerPhone = phone,
