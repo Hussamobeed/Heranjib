@@ -91,4 +91,16 @@ class LegacyBackupTest {
             assertEquals("p,ass",restored.password);assertEquals("profile",restored.profile);assertNotNull(restored.remoteId);assertEquals(1,restored.status)
         } finally {db.close()}
     }
+    @Test fun restoringOldBackupBeforePairingCannotUnsellARecentlySoldCard()=runTest {
+        linked(false);val db=database()
+        try {
+            val dao=db.appDao();val cat=dao.insertCategory(VoucherCategory(name="100",createdDate=1))
+            dao.insertVouchers(listOf(Voucher(categoryId=cat,voucherNumber="001",status=1)))
+            val manager=CsvExportManager(context,db)
+            assertTrue(manager.lastImportError,manager.importData(legacy().inputStream()))
+            assertEquals(1,dao.findVoucherByUsername("001")!!.status)
+            assertEquals(1,dao.findVoucherByUsername("002")!!.status)
+        } finally {db.close()}
+    }
+
 }

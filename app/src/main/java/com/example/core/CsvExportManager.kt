@@ -238,7 +238,8 @@ class CsvExportManager(private val context: Context, private val database: AppDa
                 val linked=com.example.integration.SabaLink(context).configured
                 val dao=database.appDao()
                 database.withTransaction {
-                    if(!linked) {
+                    val merging=linked || dao.getAllVouchersForBackup().isNotEmpty() || dao.getTransactionsForExport().isNotEmpty()
+                    if(!merging) {
                         dao.clearVouchers();dao.clearCategories();dao.clearTransactions();dao.clearDailyStatistics();dao.clearSettings();dao.clearLogs();dao.clearSmsMessages()
                         dao.insertCategories(categories);check(dao.insertVouchers(vouchers).all{it!=-1L}) { "كروت مكررة داخل الفئة" }
                         dao.insertTransactions(transactions);dao.insertDailyStatistics(statistics)
@@ -252,7 +253,7 @@ class CsvExportManager(private val context: Context, private val database: AppDa
                         for(v in vouchers) {
                             val present=dao.findVoucherByUsername(v.voucherNumber)
                             if(present==null) {
-                                check(dao.insertVouchers(listOf(v.copy(id=0,categoryId=mapping.getValue(v.categoryId),status=if(v.status==1)1 else 2,remoteId=null))).single()!=-1L)
+                                check(dao.insertVouchers(listOf(v.copy(id=0,categoryId=mapping.getValue(v.categoryId),status=if(linked && v.status!=1)2 else v.status,remoteId=if(linked)null else v.remoteId))).single()!=-1L)
                             } else {
                                 val state=if(present.status==1||v.status==1)1 else if(present.status in listOf(2,3)||v.status in listOf(2,3))2 else 0
                                 dao.updateVoucher(present.copy(status=state,password=present.password.ifEmpty{v.password},profile=present.profile.ifEmpty{v.profile},syncedStatus=-1))
