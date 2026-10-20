@@ -181,10 +181,6 @@ class SettingsFragment : Fragment() {
     }
 
     private fun performImport(uri: android.net.Uri) {
-        if (com.example.integration.SabaLink(requireContext()).configured) {
-            Toast.makeText(requireContext(), "استعادة نسخة المخزون متوقفة بعد الربط لمنع إعادة بيع الكروت. احتفظ بالنسخة الحالية", Toast.LENGTH_LONG).show()
-            return
-        }
         binding.btnImportCsv.isEnabled = false
         binding.btnImportCsv.text = "جاري الاستيراد..."
         
@@ -195,9 +191,9 @@ class SettingsFragment : Fragment() {
                 if (inputStream != null) {
                     val success = exportManager.importData(inputStream)
                     if (success) {
-                        Toast.makeText(requireContext(), "تم استيراد البيانات بنجاح واستعادة قاعدة البيانات", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "تمت الاستعادة. بعد الربط تُدمج النسخة دون إعادة الكروت المباعة للبيع، وتبقى الكروت المسترجعة غير المعروفة للمراجعة", Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(requireContext(), "فشل استيراد البيانات. تأكد من صحة ملف النسخة الاحتياطية", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), exportManager.lastImportError ?: "فشل استيراد البيانات. لم تتغير قاعدة البيانات", Toast.LENGTH_LONG).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "لا يمكن فتح الملف المحدد", Toast.LENGTH_SHORT).show()

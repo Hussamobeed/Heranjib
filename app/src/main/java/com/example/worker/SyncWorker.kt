@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 class SyncWorker(private val context: Context, params: WorkerParameters): CoroutineWorker(context,params) {
     companion object {
-        private val lock=Mutex()
+        private val lock=com.example.core.LedgerGate.sync
         private fun asciiDigits(text: String) = text.map { ch -> if (ch.isDigit()) Character.getNumericValue(ch).toString() else ch.toString() }.joinToString("")
         fun enqueue(context: Context) {
             WorkManager.getInstance(context).enqueueUniqueWork("SabaImmediateSync",ExistingWorkPolicy.APPEND_OR_REPLACE,
@@ -63,7 +63,23 @@ class SyncWorker(private val context: Context, params: WorkerParameters): Corout
                     check(link.request("sync",empty().put("ack",command.getString("id"))).optBoolean("accepted")) { "لم يؤكد الخادم الاستلام" }
                 }
                 // Upgrade stock in-place. Sent flags are never reset by a download or migration.
-                for(voucher in dao.getAllVouchersForBackup()) if(voucher.remoteId==null)dao.setRemoteId(voucher.id,id("voucher",voucher.id))
+                val legacy=dao.getAllVouchersForBackup().filter{it.remoteId==null}
+                for(chunk in legacy.chunked(500)) {
+                    val remote=link.request("reconcile",JSONObject().put("usernames",JSONArray(chunk.map{it.voucherNumber}))).getJSONArray("vouchers")
+                    val known=(0 until remote.length()).map{remote.getJSONObject(it)}.associateBy{it.getString("username")}
+                    db.withTransaction {
+                        for(v in chunk) {
+                            val found=known[v.voucherNumber]
+                            if(found!=null) {
+                                require(dao.getAllCategoriesList().firstOrNull{it.id==v.categoryId}?.name==found.getString("category")) { "فئة الكرت ${v.voucherNumber} تختلف عن سجل SABA" }
+                                val current=dao.findVoucherByUsername(v.voucherNumber)?:continue
+                                val state=when(found.getString("status")){"sent"->1;"unknown","reserved"->2;else->current.status}
+                                val merged=if(current.status==1)1 else if(current.status in listOf(2,3))2 else state
+                                dao.updateVoucher(current.copy(remoteId=found.getString("id"),status=merged,syncedStatus=-1))
+                            } else dao.setRemoteId(v.id,id("voucher",v.id))
+                        }
+                    }
+                }
                 val categories=dao.getAllCategoriesList().associateBy{it.id}
                 while(true) {
                     val vouchers=dao.getVouchersForSync(500);if(vouchers.isEmpty())break
