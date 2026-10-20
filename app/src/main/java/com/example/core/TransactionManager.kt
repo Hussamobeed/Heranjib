@@ -24,6 +24,7 @@ class TransactionManager(
         return mutex.withLock {
             val sms = dao.getNextPendingSms(System.currentTimeMillis()) ?: return@withLock false
 
+            var attemptedVoucher: Voucher? = null
             try {
                 dao.updateSmsMessage(sms.copy(status = "PROCESSING"))
                 log("INFO", "بدء معالجة الرسالة من: ${sms.sender}")
@@ -62,7 +63,7 @@ class TransactionManager(
                                 amount = parsedResult.amount?.toDouble() ?: 0.0,
                                 voucherNumber = voucherNum,
                                 categoryName = catName,
-                                smsStatus = "FAILED",
+                                smsStatus = if (attemptedVoucher != null) "UNKNOWN" else "FAILED",
                                 transactionDate = date,
                                 transactionTime = time,
                                 originalSms = sms.body
@@ -103,10 +104,14 @@ class TransactionManager(
                     return@withLock true
                 }
 
+                database.withTransaction {
+                    check(dao.reserveVoucher(voucher.id) == 1) { "الكرت لم يعد متاحاً" }
+                }
+                attemptedVoucher = voucher
                 log("INFO", "تم العثور على قسيمة (${voucher.voucherNumber}). جاري الإرسال...")
 
                 // 5. Send SMS
-                val smsText = "رقم كرت شبكة هران نت هو: ${voucher.voucherNumber}"
+                val smsText = voucherMessage(voucher)
                 val smsSender = SmsSender(context)
                 val isSent = smsSender.sendSms(parsedResult.phoneNumber!!, smsText)
 
@@ -154,12 +159,25 @@ class TransactionManager(
                 } else {
                     log("ERROR", "فشل إرسال رسالة القسيمة إلى: ${parsedResult.phoneNumber}")
                     recordFailedTransaction("SMS sending failed", voucherNum = voucher.voucherNumber, catName = category.name, catId = category.id)
-                    handleFailure(sms, "SMS sending failed")
+                    database.withTransaction {
+                        dao.updateVoucher(voucher.copy(status = 2))
+                        dao.updateSmsMessage(sms.copy(status = "REVIEW", errorMessage = "لم يتأكد إرسال SMS. الكرت محجوز للمراجعة ولا يعاد بيعه"))
+                    }
+                    triggerSyncWorker()
                 }
                 
                 true
             } catch (e: Exception) {
-                handleFailure(sms, e.message ?: "خطأ غير معروف")
+                val attempted = attemptedVoucher
+                if (attempted != null) {
+                    database.withTransaction {
+                        val current = dao.findVoucherByUsername(attempted.voucherNumber)
+                        if (current?.status == 3) dao.updateVoucher(current.copy(status = 2))
+                        dao.updateSmsMessage(sms.copy(status = "REVIEW", errorMessage = "نتيجة الإرسال غير محسومة. راجع الكرت ${attempted.voucherNumber}"))
+                    }
+                    log("ERROR", "تحتاج مراجعة: ${attempted.voucherNumber} — ${e.message}")
+                    triggerSyncWorker()
+                } else handleFailure(sms, e.message ?: "خطأ غير معروف")
                 true
             }
         }
@@ -197,13 +215,7 @@ class TransactionManager(
     }
 
     private suspend fun triggerSyncWorker() {
-        val constraints = androidx.work.Constraints.Builder()
-            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-            .build()
-        val request = androidx.work.OneTimeWorkRequestBuilder<com.example.worker.SyncWorker>()
-            .setConstraints(constraints)
-            .build()
-        androidx.work.WorkManager.getInstance(context).enqueue(request)
+        com.example.worker.SyncWorker.enqueue(context)
     }
 
     // 3. Duplicate Protection
@@ -259,12 +271,20 @@ class TransactionManager(
     // 6. Crash Recovery
     suspend fun recoverUnfinishedTransactions() {
         mutex.withLock {
-            val processingSmsList = dao.getProcessingSms()
-            for (sms in processingSmsList) {
-                dao.updateSmsMessage(sms.copy(status = "PENDING"))
-                log("WARNING", "تم استرداد معاملة غير مكتملة بعد إعادة التشغيل: ${sms.sender}")
+            database.withTransaction {
+                for (voucher in dao.getAllVouchersForBackup().filter { it.status == 3 }) {
+                    dao.updateVoucher(voucher.copy(status = 2))
+                }
+                for (sms in dao.getProcessingSms()) {
+                    dao.updateSmsMessage(sms.copy(status = "REVIEW", errorMessage = "انقطع التطبيق أثناء المعالجة. راجع العملية قبل أي إعادة إرسال"))
+                }
             }
         }
+    }
+
+    private fun voucherMessage(voucher: Voucher): String = buildString {
+        append("رقم كرت شبكة هران نت هو: ${voucher.voucherNumber}")
+        if (voucher.password.isNotEmpty() && voucher.password != voucher.voucherNumber) append("\nكلمة المرور: ${voucher.password}")
     }
 
     // 7. Loyalty Gift System for Nth Purchase
@@ -325,11 +345,13 @@ class TransactionManager(
         
         log("INFO", "تم العثور على كرت هدية من الفئة المفضلة (${category.name}) والرقم التسلسلي (${giftVoucher.voucherNumber}). جاري إرساله...")
         
+        val reservedGift = giftVoucher
+        check(dao.reserveVoucher(reservedGift.id) == 1) { "كرت الهدية لم يعد متاحاً" }
         // Wait for 5 seconds before sending the gift SMS to prevent the network from dropping it due to rapid consecutive messages to the same number
         kotlinx.coroutines.delay(5000)
 
         // Custom Arabic text with highly polished customer relationship tone
-        val giftSmsText = "تهانينا! 🎉 أنت من أفضل عملائنا المميزين، ويسعدنا جداً إهداؤك كرت إنترنت مجاني كهدية تقديراً لولائك المستمر لنا 🌟\nرقم كرت شبكة هران نت هو: ${giftVoucher.voucherNumber}"
+        val giftSmsText = "شكراً لولائك. هذه هدية من شبكة هران نت.\n" + voucherMessage(reservedGift)
         
         val smsSender = SmsSender(context)
         val isSent = smsSender.sendSms(phone, giftSmsText)
@@ -375,7 +397,10 @@ class TransactionManager(
             }
             triggerSyncWorker()
         } else {
-            log("ERROR", "فشل إرسال رسالة كرت الهدية المجاني للعميل $phone")
+            dao.updateVoucher(reservedGift.copy(status = 2))
+            log("ERROR", "لم يتأكد إرسال الهدية للعميل $phone. الكرت ${reservedGift.voucherNumber} محجوز للمراجعة")
+            triggerSyncWorker()
         }
     }
 }
+

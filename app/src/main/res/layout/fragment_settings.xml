@@ -119,7 +119,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="المزامنة وجلب البيانات"
+                    android:text="ربط SABA والمزامنة"
                     android:textStyle="bold"
                     android:textSize="18sp"
                     android:textColor="?attr/colorPrimary"
@@ -128,7 +128,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="يتم مزامنة البيانات تلقائياً كل دقيقة مع Google Apps Script."
+                    android:text="بعد ربط SABA، تُرفع المبيعات ويُسحب المخزون عند المزامنة. المزامنة الدورية كل 15 دقيقة وقد يؤخرها نظام أندرويد. استخدم المزامنة الآن للاستلام عند الحاجة."
                     android:textColor="?android:attr/textColorSecondary"
                     android:textSize="14sp"
                     android:layout_marginBottom="16dp" />
@@ -154,7 +154,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="جلب كروت"
+                        android:text="ربط SABA"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
                 </LinearLayout>
             </LinearLayout>
@@ -266,3 +266,4 @@
 
     </LinearLayout>
 </ScrollView>
+

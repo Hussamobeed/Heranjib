@@ -128,12 +128,13 @@ class VoucherListFragment : Fragment() {
 
     private fun showVoucherMenu(voucher: Voucher, anchorView: View) {
         val popup = PopupMenu(requireContext(), anchorView)
-        if (voucher.status == 0) {
+        val linked = com.example.integration.SabaLink(requireContext()).configured
+        if (voucher.status != 1) {
             popup.menu.add(0, 1, 0, "تحديد كمرسل")
-        } else {
+        } else if (!linked) {
             popup.menu.add(0, 2, 0, "إلغاء الإرسال (تحديد كمتاح)")
         }
-        popup.menu.add(0, 3, 0, "حذف القسيمة")
+        if (!linked) popup.menu.add(0, 3, 0, "حذف القسيمة")
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -195,6 +196,10 @@ class VoucherListFragment : Fragment() {
     }
 
     private fun showAddVoucherOptionsDialog(categoryName: String) {
+        if (com.example.integration.SabaLink(requireContext()).configured) {
+            Toast.makeText(requireContext(), "إضافة المخزون تتم من SABA", Toast.LENGTH_LONG).show()
+            return
+        }
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_voucher, null)
         val tvCategory = dialogView.findViewById<android.widget.TextView>(R.id.tv_selected_category)
         val btnSwitchCategory = dialogView.findViewById<View>(R.id.btn_switch_category)
@@ -319,3 +324,4 @@ class VoucherListFragment : Fragment() {
         _binding = null
     }
 }
+

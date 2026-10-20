@@ -1,131 +1,111 @@
 package com.example.worker
 
 import android.content.Context
-import androidx.work.CoroutineWorker
-import androidx.work.WorkerParameters
+import androidx.room.withTransaction
+import androidx.work.*
+import com.example.BuildConfig
 import com.example.data.local.AppDatabase
-import com.example.data.local.entity.AppLog
+import com.example.data.local.entity.*
+import com.example.integration.SabaLink
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.*
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
-class SyncWorker(
-    private val context: Context,
-    workerParams: WorkerParameters
-) : CoroutineWorker(context, workerParams) {
-
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val database = AppDatabase.getDatabase(context)
-        val dao = database.appDao()
-
-        try {
-            val settings = dao.getSettingsSync()
-            val webAppUrl = "https://script.google.com/macros/s/AKfycbw3VPS8m4SAq0W_LEH2NfpLxLnkmEWoG8aBpjrygf8goErQAv3B2ipJrYPvxbk6wj2tdg/exec"
-            
-            // Log start
-            dao.insertLog(AppLog(type = "INFO", message = "Starting data sync..."))
-
-            // Sync Transactions
-            val transactions = dao.getUnsyncedTransactions()
-            for (tx in transactions) {
-                val payload = JSONObject().apply {
-                    put("TransactionID", tx.id.toString())
-                    put("Date", tx.transactionDate)
-                    put("Time", tx.transactionTime)
-                    put("CustomerPhone", tx.customerPhone)
-                    put("Amount", tx.amount)
-                    put("VoucherCategory", tx.categoryName)
-                    put("VoucherNumber", tx.voucherNumber)
-                    put("SMSStatus", tx.smsStatus)
-                    put("OriginalSMS", tx.originalSms)
-                }
-
-                val success = sendData(webAppUrl, "transaction", payload)
-                if (success) {
-                    dao.updateTransaction(tx.copy(isSynced = true))
-                }
-            }
-
-            // Sync Logs
-            val logs = dao.getUnsyncedLogs()
-            for (log in logs) {
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                val date = Date(log.timestamp)
-                
-                val payload = JSONObject().apply {
-                    put("Date", dateFormat.format(date))
-                    put("Time", timeFormat.format(date))
-                    put("Type", log.type)
-                    put("Message", log.message)
-                }
-
-                val success = sendData(webAppUrl, "log", payload)
-                if (success) {
-                    dao.updateLog(log.copy(isSynced = true))
-                }
-            }
-            
-            // Note: Categories and Daily Statistics are synced via Transactions on the server side in Apps Script,
-            // but we can mark them synced locally to clear the pending counts if they exist.
-            val categories = dao.getUnsyncedCategories()
-            for (cat in categories) {
-                 dao.updateCategory(cat.copy(isSynced = true))
-            }
-            val stats = dao.getUnsyncedDailyStatistics()
-            for (stat in stats) {
-                 dao.updateDailyStatistic(stat.copy(isSynced = true))
-            }
-            
-            // Update last sync time
-            val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            settings?.let {
-                dao.updateSettings(it.copy(lastSyncTime = currentTime))
-            }
-            
-            dao.insertLog(AppLog(type = "INFO", message = "Data sync completed successfully."))
-            Result.success()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            dao.insertLog(AppLog(type = "ERROR", message = "Data sync failed: ${e.message}"))
-            Result.retry()
+class SyncWorker(private val context: Context, params: WorkerParameters): CoroutineWorker(context,params) {
+    companion object {
+        private val lock=Mutex()
+        private fun asciiDigits(text: String) = text.map { ch -> if (ch.isDigit()) Character.getNumericValue(ch).toString() else ch.toString() }.joinToString("")
+        fun enqueue(context: Context) {
+            WorkManager.getInstance(context).enqueueUniqueWork("SabaImmediateSync",ExistingWorkPolicy.APPEND_OR_REPLACE,
+                OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).setBackoffCriteria(BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build())
         }
     }
-
-    private fun sendData(webAppUrl: String, type: String, payload: JSONObject): Boolean {
-        var connection: HttpURLConnection? = null
-        try {
-            val url = URL(webAppUrl)
-            connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
-            val requestBody = JSONObject().apply {
-                put("type", type)
-                put("payload", payload)
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        lock.withLock {
+            val link=SabaLink(context)
+            if(!link.configured)return@withLock Result.success()
+            val db=AppDatabase.getDatabase(context); val dao=db.appDao()
+            fun id(kind:String,value:Long)=UUID.nameUUIDFromBytes("${link.installationId}:$kind:$value".toByteArray(Charsets.UTF_8)).toString()
+            fun empty()=JSONObject().put("vouchers",JSONArray()).put("transactions",JSONArray()).put("logs",JSONArray()).put("appVersion",BuildConfig.VERSION_NAME)
+            try {
+                // Server requests remain pending until every credential is committed locally.
+                val poll=link.request("poll",JSONObject())
+                val commands=poll.getJSONArray("commands")
+                for(i in 0 until commands.length()) {
+                    val command=commands.getJSONObject(i);val users=command.getJSONArray("users")
+                    db.withTransaction {
+                        val name=command.getString("category")
+                        require(name.toIntOrNull()==command.getInt("price")) { "فئة الدفعة غير صالحة" }
+                        var category=dao.getCategoryByName(name)
+                        if(category==null){val categoryId=dao.insertCategory(VoucherCategory(name=name,createdDate=System.currentTimeMillis()));category=dao.getCategoryByName(name)?:throw IllegalStateException("تعذر إنشاء الفئة $categoryId")}
+                        for(j in 0 until users.length()) {
+                            val user=users.getJSONObject(j); val remoteId=user.getString("id"); val username=user.getString("username")
+                            val previous=dao.findVoucherByUsername(username)
+                            if(previous!=null) {
+                                require(previous.remoteId==remoteId) { "الكرت $username موجود مسبقاً. لم نؤكد استلام الدفعة" }
+                            } else {
+                                val result=dao.insertVouchers(listOf(Voucher(categoryId=category!!.id,voucherNumber=username,remoteId=remoteId,
+                                    password=user.optString("password"),profile=user.optString("profile"),syncedStatus=-1)))
+                                check(result.single()!=-1L) { "تعذر حفظ كرت من الدفعة" }
+                            }
+                        }
+                    }
+                    check(link.request("sync",empty().put("ack",command.getString("id"))).optBoolean("accepted")) { "لم يؤكد الخادم الاستلام" }
+                }
+                // Upgrade stock in-place. Sent flags are never reset by a download or migration.
+                for(voucher in dao.getAllVouchersForBackup()) if(voucher.remoteId==null)dao.setRemoteId(voucher.id,id("voucher",voucher.id))
+                val categories=dao.getAllCategoriesList().associateBy{it.id}
+                while(true) {
+                    val vouchers=dao.getVouchersForSync(500);if(vouchers.isEmpty())break
+                    val payload=JSONArray()
+                    for(v in vouchers) {
+                        val category=categories[v.categoryId]?.name ?: throw IllegalStateException("فئة الكرت غير موجودة")
+                        val price=category.toIntOrNull() ?: throw IllegalStateException("فئة $category يجب أن تكون مبلغاً رقمياً")
+                        payload.put(JSONObject().put("id",v.remoteId).put("username",v.voucherNumber).put("category",category).put("price",price)
+                            .put("status",when(v.status){0->"available";1->"sent";3->"reserved";else->"unknown"}))
+                    }
+                    check(link.request("sync",empty().put("vouchers",payload)).optBoolean("accepted")) { "لم يؤكد الخادم المخزون" }
+                    for(v in vouchers)dao.ackVoucher(v.id,v.status)
+                }
+                while(true) {
+                    val transactions=dao.getTransactionsForSync(200);if(transactions.isEmpty())break
+                    val payload=JSONArray()
+                    for(tx in transactions) {
+                        val voucher=dao.findVoucherByUsername(tx.voucherNumber)
+                        val date=LocalDate.parse(asciiDigits(tx.transactionDate),DateTimeFormatter.ISO_LOCAL_DATE)
+                        val time=LocalTime.parse(asciiDigits(tx.transactionTime))
+                        payload.put(JSONObject().put("id",id("transaction",tx.id)).put("voucherId",voucher?.remoteId?:"").put("username",tx.voucherNumber)
+                            .put("category",tx.categoryName).put("phone",tx.customerPhone).put("amount",tx.amount).put("status",tx.smsStatus)
+                            .put("saleDate",date.toString()).put("soldAt",date.atTime(time).atZone(ZoneId.of("Asia/Aden")).toInstant().toString()))
+                    }
+                    check(link.request("sync",empty().put("transactions",payload)).optBoolean("accepted")) { "لم يؤكد الخادم المعاملات" }
+                    transactions.forEach{dao.ackTransaction(it.id)}
+                }
+                if(poll.optBoolean("logsEnabled")) {
+                    while(true) {
+                        val logs=dao.getLogsForSaba(200);if(logs.isEmpty())break
+                        val payload=JSONArray()
+                        logs.forEach{payload.put(JSONObject().put("id",id("log",it.id)).put("level",it.type).put("message",it.message.take(2000)).put("loggedAt",Instant.ofEpochMilli(it.timestamp).toString()))}
+                        val result=link.request("sync",empty().put("logs",payload))
+                        check(result.optBoolean("accepted")) { "لم يؤكد الخادم السجل" }
+                        if(!result.optBoolean("logsEnabled"))break
+                        logs.forEach{dao.ackSabaLog(it.id)}
+                    }
+                }
+                check(link.request("sync",empty()).optBoolean("accepted"))
+                dao.getSettingsSync()?.let{dao.updateSettings(it.copy(lastSyncTime=Instant.now().toString()))}
+                Result.success()
+            } catch(e:Exception) {
+                dao.insertLog(AppLog(type="ERROR",message="مزامنة SABA: ${e.message}".take(2000)))
+                Result.retry()
             }
-
-            val writer = OutputStreamWriter(connection.outputStream)
-            writer.write(requestBody.toString())
-            writer.flush()
-            writer.close()
-
-            val responseCode = connection.responseCode
-            return responseCode == HttpURLConnection.HTTP_OK
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
-        } finally {
-            connection?.disconnect()
         }
     }
 }

@@ -49,7 +49,7 @@ class VouchersAdapter(
                 tvStatus.setTextColor(itemView.context.getColor(android.R.color.darker_gray))
                 llSentInfo.visibility = View.GONE
             } else {
-                tvStatus.text = "مرسل"
+                tvStatus.text = when (voucher.status) { 1 -> "أُرسل للشبكة"; 3 -> "قيد الإرسال"; else -> "يحتاج مراجعة" }
                 tvStatus.setTextColor(itemView.context.getColor(android.R.color.holo_green_dark))
                 llSentInfo.visibility = View.VISIBLE
                 tvPhone.text = "الهاتف: ${voucher.customerPhone ?: "غير محدد"}"
@@ -68,3 +68,4 @@ class VouchersAdapter(
         }
     }
 }
+
