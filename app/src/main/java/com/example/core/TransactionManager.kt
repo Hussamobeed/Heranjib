@@ -17,7 +17,7 @@ class TransactionManager(
     private val context: Context
 ) {
     private val dao = database.appDao()
-    private val mutex = Mutex()
+    private val mutex = LedgerGate.sales
 
     // 1. Transaction Lock
     suspend fun processNextSms(): Boolean {

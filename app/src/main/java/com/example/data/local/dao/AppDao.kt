@@ -134,7 +134,7 @@ interface AppDao {
     
     // Transaction & Voucher Methods
     @Insert
-    suspend fun insertTransaction(transaction: Transaction)
+    suspend fun insertTransaction(transaction: Transaction): Long
     
     @Update
     suspend fun updateVoucher(voucher: Voucher)
