@@ -65,6 +65,7 @@ class VoucherListViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     suspend fun importVouchersFromList(lines: List<String>): ImportResult {
+        check(!com.example.integration.SabaLink(getApplication()).configured) { "إضافة المخزون تتم من SABA بعد ربط الهاتف" }
         var validCount = 0
         var invalidCount = 0
         val vouchersToInsert = mutableListOf<Voucher>()
@@ -104,6 +105,7 @@ class VoucherListViewModel(application: Application) : AndroidViewModel(applicat
 
     fun updateVoucherStatus(voucher: Voucher, newStatus: Int, phone: String? = null, date: String? = null, time: String? = null) {
         viewModelScope.launch {
+            if (com.example.integration.SabaLink(getApplication()).configured && newStatus == 0) return@launch
             repository.updateVoucher(
                 voucher.copy(
                     status = newStatus,
@@ -117,6 +119,7 @@ class VoucherListViewModel(application: Application) : AndroidViewModel(applicat
 
     fun deleteVoucher(voucher: Voucher) {
         viewModelScope.launch {
+            if (com.example.integration.SabaLink(getApplication()).configured) return@launch
             repository.deleteVoucher(voucher)
         }
     }
@@ -132,3 +135,4 @@ data class ImportResult(
     val duplicates: Int,
     val invalid: Int
 )
+

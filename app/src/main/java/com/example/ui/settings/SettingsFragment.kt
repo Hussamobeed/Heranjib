@@ -99,21 +99,48 @@ class SettingsFragment : Fragment() {
         }
 
         binding.btnSyncNow.setOnClickListener {
-            val constraints = androidx.work.Constraints.Builder()
-                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                .build()
-            val request = androidx.work.OneTimeWorkRequestBuilder<com.example.worker.SyncWorker>()
-                .setConstraints(constraints)
-                .build()
-            androidx.work.WorkManager.getInstance(requireContext()).enqueue(request)
-            Toast.makeText(requireContext(), "تم بدء المزامنة اليدوية", Toast.LENGTH_SHORT).show()
+            if (!com.example.integration.SabaLink(requireContext()).configured) {
+                Toast.makeText(requireContext(), "اربط الهاتف بـ SABA أولاً", Toast.LENGTH_LONG).show()
+            } else {
+                com.example.worker.SyncWorker.enqueue(requireContext())
+                Toast.makeText(requireContext(), "بدأ طلب مزامنة SABA. راجع السجل إذا تعذر الاتصال", Toast.LENGTH_LONG).show()
+            }
         }
-
+        binding.btnFetchUsers.text = "ربط SABA"
         binding.btnFetchUsers.setOnClickListener {
-            binding.btnFetchUsers.isEnabled = false
-            binding.btnFetchUsers.text = "جاري الجلب..."
-            val scriptUrl = "https://script.google.com/macros/s/AKfycbxjrCkIZRolRMJ2EKeXnZpqgcI5kIQoGyfTWYSILaF9rSk6vXOXRpy5Cp9dREOXC_Ii/exec"
-            viewModel.fetchUsersFromLink(scriptUrl)
+            val input = android.widget.EditText(requireContext()).apply {
+                hint = "الصق بيانات الربط من صفحة Heranjib في SABA"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                setPadding(32,24,32,24)
+            }
+            val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("ربط هاتف Heranjib بـ SABA")
+                .setMessage("أنشئ رمز الربط في SABA ثم الصقه هنا. استلام الكروت يتم بأمر من SABA.")
+                .setView(input).setNegativeButton("إلغاء",null).setPositiveButton("ربط",null).create()
+            dialog.setOnShowListener {
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val button = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+                    button.isEnabled = false
+                    val raw = input.text.toString().trim()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val stock = AppDatabase.getDatabase(requireContext()).appDao().getAllVouchersForBackup()
+                                val duplicate = stock.groupingBy { it.voucherNumber }.eachCount().entries.firstOrNull { it.value > 1 }
+                                require(duplicate == null) { "الكرت ${duplicate?.key} مكرر بين الفئات. أزل النسخة المكررة من المخزون قبل الربط" }
+                                com.example.integration.SabaLink(requireContext()).pair(raw)
+                            }
+                            com.example.worker.SyncWorker.enqueue(requireContext())
+                            Toast.makeText(requireContext(), "تم الربط وطلب المزامنة", Toast.LENGTH_LONG).show()
+                            dialog.dismiss()
+                        } catch (error: Exception) {
+                            input.error = error.message ?: "تعذر الربط"
+                            button.isEnabled = true
+                        }
+                    }
+                }
+            }
+            dialog.show()
         }
 
         binding.btnExportCsv.setOnClickListener {
@@ -154,6 +181,10 @@ class SettingsFragment : Fragment() {
     }
 
     private fun performImport(uri: android.net.Uri) {
+        if (com.example.integration.SabaLink(requireContext()).configured) {
+            Toast.makeText(requireContext(), "استعادة نسخة المخزون متوقفة بعد الربط لمنع إعادة بيع الكروت. احتفظ بالنسخة الحالية", Toast.LENGTH_LONG).show()
+            return
+        }
         binding.btnImportCsv.isEnabled = false
         binding.btnImportCsv.text = "جاري الاستيراد..."
         
@@ -186,3 +217,4 @@ class SettingsFragment : Fragment() {
         _binding = null
     }
 }
+

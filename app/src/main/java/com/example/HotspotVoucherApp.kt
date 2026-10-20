@@ -21,10 +21,12 @@ class HotspotVoucherApp : Application() {
             .setConstraints(constraints)
             .build()
             
+        WorkManager.getInstance(this).cancelUniqueWork("AppScriptPeriodicSync")
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "AppScriptPeriodicSync",
-            ExistingPeriodicWorkPolicy.KEEP,
+            "SabaPeriodicSync",
+            ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
     }
 }
+

@@ -14,6 +14,25 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppDao {
+    @Query("SELECT * FROM vouchers WHERE status != syncedStatus ORDER BY id LIMIT :limit")
+    suspend fun getVouchersForSync(limit: Int): List<Voucher>
+    @Query("UPDATE vouchers SET syncedStatus = :status WHERE id = :id AND status = :status")
+    suspend fun ackVoucher(id: Long, status: Int)
+    @Query("UPDATE vouchers SET remoteId = :remoteId WHERE id = :id AND remoteId IS NULL")
+    suspend fun setRemoteId(id: Long, remoteId: String)
+    @Query("SELECT * FROM vouchers WHERE voucherNumber = :username LIMIT 1")
+    suspend fun findVoucherByUsername(username: String): Voucher?
+    @Query("SELECT * FROM transactions WHERE sabaSynced = 0 ORDER BY id LIMIT :limit")
+    suspend fun getTransactionsForSync(limit: Int): List<com.example.data.local.entity.Transaction>
+    @Query("UPDATE transactions SET sabaSynced = 1 WHERE id = :id")
+    suspend fun ackTransaction(id: Long)
+    @Query("SELECT * FROM app_logs WHERE sabaSynced = 0 ORDER BY id LIMIT :limit")
+    suspend fun getLogsForSaba(limit: Int): List<com.example.data.local.entity.AppLog>
+    @Query("UPDATE app_logs SET sabaSynced = 1 WHERE id = :id")
+    suspend fun ackSabaLog(id: Long)
+    @Query("UPDATE vouchers SET status = 3 WHERE id = :id AND status = 0")
+    suspend fun reserveVoucher(id: Long): Int
+
     @Query("SELECT * FROM settings LIMIT 1")
     fun getSettings(): Flow<Settings?>
 
@@ -248,3 +267,4 @@ interface AppDao {
     @Query("SELECT customerPhone as phone, COUNT(*) as count FROM transactions WHERE customerPhone IS NOT NULL AND customerPhone != '' AND smsStatus = 'SENT' AND amount > 0 GROUP BY customerPhone HAVING COUNT(*) > 0")
     suspend fun getAllCustomerPurchaseCounts(): List<com.example.data.local.model.CustomerPurchaseCount>
 }
+
