@@ -125,6 +125,9 @@ class SettingsFragment : Fragment() {
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val stock = AppDatabase.getDatabase(requireContext()).appDao().getAllVouchersForBackup()
+                                val duplicate = stock.groupingBy { it.voucherNumber }.eachCount().entries.firstOrNull { it.value > 1 }
+                                require(duplicate == null) { "الكرت ${duplicate?.key} مكرر بين الفئات. أزل النسخة المكررة من المخزون قبل الربط" }
                                 com.example.integration.SabaLink(requireContext()).pair(raw)
                             }
                             com.example.worker.SyncWorker.enqueue(requireContext())
