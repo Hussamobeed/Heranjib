@@ -64,10 +64,20 @@ jobs:
               --stacktrace
           fi
 
+      - name: Verify release certificate matches the previous APK
+        run: |
+          set -euo pipefail
+          apk_signer=$(rg --files "$ANDROID_HOME/build-tools" | rg '/apksigner$' | sort -V | tail -1)
+          "$apk_signer" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk > app/build/outputs/apk/release/signing-report.txt
+          certificate=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' app/build/outputs/apk/release/signing-report.txt | tr '[:upper:]' '[:lower:]' | tr -d ' :')
+          test "$certificate" = "94322885ef8f66fcff7c0dce50a774bff08a029093e3408aac1110e06992489f"
+          cat app/build/outputs/apk/release/signing-report.txt
+
       - name: Upload Signed APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/signing-report.txt
           retention-days: 14
-

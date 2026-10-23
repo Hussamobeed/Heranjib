@@ -31,6 +31,18 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
+    androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+        val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+        insets
+    }
+    binding.mainToolbar.inflateMenu(R.menu.main_toolbar_menu)
+    binding.mainToolbar.setOnMenuItemClickListener { item ->
+        if (item.itemId == R.id.action_card_search) {
+            startActivity(android.content.Intent(this, com.example.ui.search.CardSearchActivity::class.java))
+            true
+        } else false
+    }
 
     val navHostFragment = supportFragmentManager
         .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
