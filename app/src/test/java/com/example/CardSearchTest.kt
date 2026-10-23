@@ -38,6 +38,14 @@ class CardSearchTest {
         val fields = CardResult.fields(row).toMap()
         assertFalse(fields.containsKey("الرفع")); assertFalse(fields.containsKey("وقت الاستخدام"))
     }
+    @Test fun networkDisplayNamesAreUsedForCustomerAndShareWithLegacyFallback() {
+        val row = JSONObject("""{"username":"001","firstAccessPoint":"HR(7-25)","firstAccessPointName":"Heran Net 195","currentAccessPoint":"HSHR(5-10)","currentAccessPointName":"Heran Net 60"}""")
+        assertEquals("Heran Net 195", CardResult.fields(row).toMap()["نقطة الدخول"])
+        assertTrue(CardResult.shareText(row).contains("Heran Net 60"))
+        assertFalse(CardResult.shareText(row).contains("HSHR("))
+        row.remove("firstAccessPointName")
+        assertEquals("HR(7-25)", CardResult.fields(row).toMap()["نقطة الدخول"])
+    }
     @Test fun searchScreenOpensWithoutSmsPermissionsOrStoredDatabase() {
         val controller = Robolectric.buildActivity(CardSearchActivity::class.java).setup()
         val activity = controller.get()
