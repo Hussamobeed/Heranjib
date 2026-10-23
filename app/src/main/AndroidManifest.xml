@@ -34,6 +34,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.search.CardSearchActivity" android:exported="false" android:label="بحث عن كرت" />
+
         <activity
             android:name=".ui.settings.LogsActivity"
             android:exported="false"
@@ -82,4 +84,3 @@
     </application>
 
 </manifest>
-
