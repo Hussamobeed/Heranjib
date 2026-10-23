@@ -43,11 +43,11 @@ object CardResult {
         ) else listOf(
             "الكرت" to text(row, "username"), "النظام" to text(row, "kind"), "الجهاز" to text(row, "routerName"),
             "الفئة / البروفايل" to text(row, "profile"), "أول دخول" to text(row, "firstLoginDate"),
-            "آخر ظهور" to text(row, "lastSeen"), "الماك" to text(row, "firstMac"), "نقطة الدخول" to text(row, "firstAccessPoint"),
+            "آخر ظهور" to text(row, "lastSeen"), "الماك" to text(row, "firstMac"), "نقطة الدخول" to (text(row, "firstAccessPointName") ?: text(row, "firstAccessPoint")),
             "الرفع" to bytes(text(row, "uploadBytes")), "التنزيل" to bytes(text(row, "downloadBytes")),
             "إجمالي البيانات" to bytes(text(row, "totalBytes")), "وقت الاستخدام" to duration(text(row, "uptimeSeconds")),
             "عدد الجلسات" to text(row, "sessionCount"), "الحالة" to text(row, "status"),
-            "الماك الحالي / المقيّد" to text(row, "currentMac"), "نقطة الاتصال الحالية" to text(row, "currentAccessPoint"),
+            "الماك الحالي / المقيّد" to text(row, "currentMac"), "نقطة الاتصال الحالية" to (text(row, "currentAccessPointName") ?: text(row, "currentAccessPoint")),
             "عنوان IP" to text(row, "ip"), "آخر حفظ للتقرير" to date(text(row, "cachedAt"))
         )
         return fields.mapNotNull { (label, value) -> value?.let { label to it } }
