@@ -177,7 +177,9 @@ class VoucherListFragment : Fragment() {
 
     // Copying or sharing is deliberately independent of the sent-status and sales workflows.
     private fun voucherShareText(voucher: Voucher): String =
-        "رقم كرت شبكة هران نت هو : ${voucher.voucherNumber}"\n\n    private fun showMarkAsSentDialog(voucher: Voucher) {
+        "رقم كرت شبكة هران نت هو : ${voucher.voucherNumber}"
+
+    private fun showMarkAsSentDialog(voucher: Voucher) {
         val layout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 40, 50, 10)
