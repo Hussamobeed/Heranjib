@@ -157,7 +157,7 @@ class VoucherListFragment : Fragment() {
                 }
                 4 -> {
                     val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("قسيمة", voucherShareText(voucher)))
+                    clipboard.setPrimaryClip(ClipData.newPlainText("رقم القسيمة", voucher.voucherNumber))
                     Toast.makeText(requireContext(), "تم نسخ القسيمة", Toast.LENGTH_SHORT).show()
                     true
                 }
@@ -176,17 +176,7 @@ class VoucherListFragment : Fragment() {
     }
 
     // Copying or sharing is deliberately independent of the sent-status and sales workflows.
-    private fun voucherShareText(voucher: Voucher): String = buildString {
-        append("القسيمة: ")
-        append(voucher.voucherNumber)
-        if (voucher.password.isNotBlank()) {
-            append("\\nكلمة المرور: ")
-            append(voucher.password)
-        }
-        append("\\nمشاركة عبر تطبيق Heranjib")
-    }
-
-    private fun showMarkAsSentDialog(voucher: Voucher) {
+    private fun voucherShareText(voucher: Voucher): String =\n        "رقم كرت شبكة هران نت هو : ${voucher.voucherNumber}"\n\n    private fun showMarkAsSentDialog(voucher: Voucher) {
         val layout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 40, 50, 10)
