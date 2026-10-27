@@ -1,6 +1,9 @@
 package com.example.ui.vouchers
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -135,6 +138,8 @@ class VoucherListFragment : Fragment() {
             popup.menu.add(0, 2, 0, "إلغاء الإرسال (تحديد كمتاح)")
         }
         if (!linked) popup.menu.add(0, 3, 0, "حذف القسيمة")
+        popup.menu.add(0, 4, 0, "نسخ")
+        popup.menu.add(0, 5, 0, "إرسال إلى")
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -150,10 +155,35 @@ class VoucherListFragment : Fragment() {
                     showDeleteConfirmation(voucher)
                     true
                 }
+                4 -> {
+                    val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("قسيمة", voucherShareText(voucher)))
+                    Toast.makeText(requireContext(), "تم نسخ القسيمة", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                5 -> {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, voucherShareText(voucher))
+                    }
+                    startActivity(Intent.createChooser(intent, "إرسال القسيمة إلى"))
+                    true
+                }
                 else -> false
             }
         }
         popup.show()
+    }
+
+    // Copying or sharing is deliberately independent of the sent-status and sales workflows.
+    private fun voucherShareText(voucher: Voucher): String = buildString {
+        append("القسيمة: ")
+        append(voucher.voucherNumber)
+        if (voucher.password.isNotBlank()) {
+            append("\\nكلمة المرور: ")
+            append(voucher.password)
+        }
+        append("\\nمشاركة عبر تطبيق Heranjib")
     }
 
     private fun showMarkAsSentDialog(voucher: Voucher) {
